@@ -111,7 +111,7 @@ get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/",
 }
 
 
-get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
+get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
 
   data_dir <- cer_dir
 
@@ -130,7 +130,7 @@ get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   return(srvy)
   }
 
-get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
+get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
 
   data_dir <- file.path(cer_dir, "weather")
 
@@ -153,7 +153,7 @@ get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   return(weather)
 }
 
-get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
+get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
 
   data_dir <- cer_dir
   nas <- c("NA", "", ".")
@@ -170,7 +170,7 @@ get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   return(dt_assign)
 }
 
-get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
+get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
 
   data_dir <- cer_dir
 
@@ -179,6 +179,7 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   dt_ts <- fread(ts, sep = ',')
   dt_ts[, ts:=NULL]
   setkey(dt_ts, day_cer, hour_cer)
+  dt_ts <- dt_ts[day_cer > 194]
 
   return(dt_ts)
 }
