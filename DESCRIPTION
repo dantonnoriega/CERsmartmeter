@@ -1,0 +1,22 @@
+Package: cersmartmeter
+Type: Package
+Title: Various Econometric Methods Using ISSDAs CER Smart Meter Project Data
+Version: 0.1
+Date: 2015-10-18
+Author: person("Danton", "Noriega", email = "danton.noriega@gmail.com", role = c("aut", "cre"))
+Description: NA
+License: Creative Commons
+LazyData: TRUE
+URL: http://github.com/ultinomics/CERsmartmeter
+Depends:
+  R (>= 3.2.0),
+  data.table
+Imports:
+  ggplot2,
+  stringr,
+  lubridate,
+  glmnet,
+  quantreg,
+  SparseM,
+  MASS,
+  lars
