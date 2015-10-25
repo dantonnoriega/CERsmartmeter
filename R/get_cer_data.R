@@ -42,6 +42,10 @@ get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/",
 
   DT <- import()
 
+  # CREATE NEW VARIABLES ---------------
+  message("creating new variables...")
+  DT[, kwh := kw*.5] # assuming data is in kw, this creates kwh
+
   ## assignment data
   message("importing assignment data and time data...")
   try(if(!exists('cer_assign')) dt_assign <- get_assign(cer_dir) else dt_assign <- cer_assign)
@@ -54,45 +58,21 @@ get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/",
   if(!is.null(mo)) dt_ts <- dt_ts[month %in% mo]
   if(!is.null(hr)) dt_ts <- dt_ts[hour %in% hr]
 
-  dt_ts[, date_cer := day_cer*100 + hour_cer] # rebuild date_cer
-  keep <- unique(dt_ts$date_cer)
-  DT <- DT[date_cer %in% keep]
-
-
-  # MERGE DATA ------------------
-  ## merge assignments
-  setkey(DT, id)
-  setkey(dt_assign, id)
-  DT <- DT[dt_assign]
-
-  ## merge time series data
-  setkey(DT, date_cer)
-  setkey(dt_ts, date_cer)
-  DT <- dt_ts[DT]
-
-  # ADD DAY OF WEEK ------------------------------------------------
-  weeks_T <- unique(DT[, .(date, year)])[, `:=`(week=week(date),
-                                                dow=wday(as.Date(date, "%Y-%m-%d")))]
-  weeks_T[, weekday:= 0 + !(dow == 1 | dow ==7)] # sunday = 1
-  setkey(weeks_T, year, week)
-  weeks_T2 <- unique(weeks_T[, .(week, year)])[, T_wk:=seq_along(week)]
-  weeks_T <- merge(weeks_T, weeks_T2, by = c("week", "year"))
-  weeks_T[, year:=NULL]
-  setkey(DT, date)
-  setkey(weeks_T, date)
-  DT <- DT[weeks_T]
-  # FREE UP RAM ---------------
-  rm('dt_ts')
-  rm('dt_assign') # remove uneeded data
-
-  # CREATE NEW VARIABLES ---------------
-  message("creating new variables...")
-  DT[, kwh := kw*.5] # assuming data is in kw, this creates kwh
-  setkey(DT, hour, weekday)
-  DT[, peak:=0]
-  DT[.(c(5,6,7), 1), peak:=1]
+  # check for date reductions of any kind and update
+  if(!all(is.null(yr), is.null(mo), is.null(hr))) {
+    keep <- unique(dt_ts$date_cer)
+    DT <- DT[date_cer %in% keep]
+  }
 
   if(!only_kwh) {
+    # MERGE DATA ------------------
+    ## merge assignments
+    DT <- merge(DT, dt_assign, by = "id")
+    DT[, code:=NULL]
+
+    ## merge time series data
+    DT <- merge(DT, dt_ts, by = "date_cer")
+
     message("merging weather and survey data...")
     # WEATHER AND SURVEY DATA ----------------
     try(if(!exists('cer_weather')) dt_weather <- get_weather(cer_dir) else dt_weather <- cer_weather)
@@ -181,7 +161,22 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   dt_ts <- dt_ts[day_cer > 194]
   dt_ts[, date_cer:=day_cer*100 + hour_cer]
   setkey(dt_ts, date_cer)
-  return(dt_ts)
 
+  # ADD DAY OF WEEK ------------------------------------------------
+  weeks_T <- unique(dt_ts[, .(date, year)])[, `:=`(week=week(date),
+                                                dow=wday(as.Date(date, "%Y-%m-%d")))]
+  weeks_T[, weekday:= 0 + !(dow == 1 | dow ==7)] # sunday = 1
+  setkey(weeks_T, year, week)
+  weeks_T2 <- unique(weeks_T[, .(week, year)])[, T_wk:=seq_along(week)]
+  weeks_T <- merge(weeks_T, weeks_T2, by = c("week", "year"))
+  weeks_T[, year:=NULL]
+  setkey(dt_ts, date)
+  setkey(weeks_T, date)
+  dt_ts <- dt_ts[weeks_T]
+  setkey(dt_ts, hour, weekday)
+  dt_ts[, peak:=0]
+  dt_ts[.(c(5,6,7), 1), peak:=1]
+  setkey(dt_ts, date_cer)
+  return(dt_ts)
 }
 
