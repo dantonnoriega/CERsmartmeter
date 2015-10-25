@@ -115,13 +115,13 @@ get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/"
 
   data_dir <- cer_dir
 
-  try(if(!file.exists(file.path(data_dir, "dt_pretrial_survey_redux.csv"))) {
+  try(if(!file.exists(file.path(data_dir, "cer_pretrial_survey_redux.csv"))) {
     stop("dt_pretrial_survey_redux.csv does not exists. run 'gen_survey_data.py'\n
          (requires python)")
   })
 
   nas <- c("NA", "", ".")
-  files <- list.files(data_dir, pattern = "dt_pretrial.*.csv", full.names = T)
+  files <- list.files(data_dir, pattern = "cer_pretrial.*.csv", full.names = T)
   srvy <- fread(files, sep = ",", header = TRUE, na.strings = nas)
   nms = sapply(names(srvy), str_replace, "\\.0", "") # remove the ".0" in names
   nms = tolower(nms)
