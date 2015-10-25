@@ -10,11 +10,11 @@ LazyData: TRUE
 URL: http://github.com/ultinomics/CERsmartmeter
 Depends:
   R (>= 3.2.0),
-  data.table (>= 1.9.6)
+  data.table (>= 1.9.6),
+  lubridate,
+  stringr
 Imports:
   ggplot2,
-  stringr,
-  lubridate,
   glmnet,
   quantreg,
   SparseM,

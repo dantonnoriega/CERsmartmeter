@@ -9,21 +9,21 @@
 #' @examples
 #' # get 2009 data, kwh data only (much smaller but still large)
 #' get_cer(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data", only_kwh=TRUE, yr = 2009)
-get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/",
+get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/",
                     only_kwh=TRUE,
                     yr = NULL,
                     mo = NULL,
                     hr = NULL) {
 
-  raw_dir <- cer_dir
+  data_dir <- file.path(cer_dir, "data")
   extdata <- system.file("extdata", "cer_kwh.csv.gz", package = "cersmartmeter")
 
   # IMPORT DATA ---------
   ## consumption data
   import <- function(...) {
     message("importing consumption data...")
-    if(dir.exists(raw_dir)) {
-      files <- list.files(raw_dir, pattern = "^File.*txt$", full.names = T)
+    if(dir.exists(data_dir)) {
+      files <- list.files(data_dir, pattern = "^File.*txt$", full.names = T)
       dts <- lapply(files, fread, sep = " ") # loop through each path and run 'fread' (data.tables import)
       DT <- rbindlist(dts) # stack data
       rm('dts')
@@ -111,9 +111,9 @@ get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/",
 }
 
 
-get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
+get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
 
-  data_dir <- cer_dir
+  data_dir <- file.path(cer_dir, "data")
 
   try(if(!file.exists(file.path(data_dir, "cer_pretrial_survey_redux.csv"))) {
     stop("dt_pretrial_survey_redux.csv does not exists. run 'gen_survey_data.py'\n
@@ -130,7 +130,7 @@ get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/"
   return(srvy)
   }
 
-get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
+get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
 
   data_dir <- file.path(cer_dir, "weather")
 
@@ -153,9 +153,9 @@ get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/
   return(weather)
 }
 
-get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
+get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
 
-  data_dir <- cer_dir
+  data_dir <- file.path(cer_dir, "data")
   nas <- c("NA", "", ".")
   assignments <- list.files(data_dir, pattern = "^SME.*csv$", full.names = T)
   dt_assign <- fread(assignments, sep = ',', select = c(1:4), na.strings = nas)
@@ -170,16 +170,18 @@ get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/"
   return(dt_assign)
 }
 
-get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/") {
+get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
 
-  data_dir <- cer_dir
+  data_dir <- file.path(cer_dir, "data")
 
   ## time series correction
   ts <- list.files(data_dir, pattern = "^dst.*csv$", full.names = T)
   dt_ts <- fread(ts, sep = ',')
   dt_ts[, ts:=NULL]
-  setkey(dt_ts, day_cer, hour_cer)
   dt_ts <- dt_ts[day_cer > 194]
-
+  dt_ts[, date_cer:=day_cer*100 + hour_cer]
+  setkey(dt_ts, date_cer)
   return(dt_ts)
+
 }
+

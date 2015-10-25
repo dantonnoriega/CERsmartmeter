@@ -4,7 +4,7 @@
 \alias{get_cer}
 \title{Imports and returns a cleaned data table of the ISSDA's CER Smart Meter Data. The returned object can be huge (up to 8 gb of RAM). The package comes with default data tables but if they are missing, source the ISSDA_CER_Smart_Metering_Data folder from Dropbox.}
 \usage{
-get_cer(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/data/",
+get_cer(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/",
   only_kwh = TRUE, yr = NULL, mo = NULL, hr = NULL)
 }
 \arguments{
