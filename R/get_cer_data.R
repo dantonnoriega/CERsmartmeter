@@ -124,11 +124,20 @@ get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   weather[, date:=NULL] # delete old date
   dublin <- format(utc, tz='Europe/Dublin')
   tzone <- format(as.POSIXct(dublin, tz="Europe/Dublin"), "%Z")
-  weather[, `:=`(date = dublin, year = year(dublin), month = month(dublin), week = week(dublin),
-                 day = day(dublin), hour = hour(dublin), min = minute(dublin), tz = tzone)]
+  weather[, `:=`(date = dublin,
+                 year = year(dublin),
+                 month = month(dublin),
+                 week = week(dublin),
+                 day = day(dublin),
+                 hour = hour(dublin),
+                 min = minute(dublin),
+                 tz = tzone)]
 
   weather <- weather[, list(temp = mean(temp), dewpt = mean(dewpt), rhum = mean(rhum)),
                      by = c('year', 'month', 'day', 'hour', 'tz')]
+  # add squared values
+  weather[, `:=`(temp2 = temp^2, dewpt2 = dewpt^2, rhum2 = rhum^2)]
+  weather[, `:=`(temp3 = temp^3, dewpt3 = dewpt^3, rhum3 = rhum^3)]
 
   return(weather)
 }
@@ -179,4 +188,5 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   setkey(dt_ts, date_cer)
   return(dt_ts)
 }
+
 
