@@ -1,6 +1,6 @@
 Package: cersmartmeter
 Type: Package
-Title: Various Econometric Methods Using ISSDAs CER Smart Meter Project Data
+Title: Various Data Cleaning Functions And Econometric Methods Using ISSDAs CER Smart Meter Project Data
 Version: 0.1
 Date: 2015-10-18
 Author: person("Danton", "Noriega", email = "danton.noriega@gmail.com", role = c("aut", "cre"))
