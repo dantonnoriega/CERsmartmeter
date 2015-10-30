@@ -35,39 +35,49 @@ balance_kwh <- function(DT_KWH) {
 #' clean residential kwh data.
 clean_residential_kwh <- function(DT_KWH) {
 
+  CORES <- detectCores() - 1
+
   # check to see if residential only data
   if(!"tar_stim" %in% names(DT_KWH)) {
     DT1 <- merge(DT_KWH, cer_assign, by = "id")
   }
   # balance data
   DT2 <- balance_kwh(DT1)[, .(id, date_cer, kw, kwh)]
-  N <- uniqueN(DT2$id)
-  T <- uniqueN(DT2$date_cer)
-  NT <- matrix(DT2$kwh,nrow=T,ncol=N) # rows = T, cols = N
-  indx <- which(is.na(NT), arr.ind = TRUE) # find r,c index of missing vals
-  indx_f <- cbind(indx[,1] + 1, indx[,2])
-  indx_b <- cbind(indx[,1] - 1, indx[,2])
-  a <- indx_f[,1]
-  b <- indx_b[,1]
+  setkey(DT2, id, date_cer)
+  weekdays <- cer_ts[weekday>0, .(date_cer, weekday)]
+  weekends <- cer_ts[weekday<1, .(date_cer, weekday)]
 
-  diff1 <- indx_f[!which(indx_f[,1] %in% indx[,1]),]
-  diff2 <- indx_b[!which(indx_b[,1] %in% indx_f[,1]),] # find differences
-  indx <- do.call(rbind, list(indx_b, indx_f))
-  NT[indx]
-  # imput any missing data
-#   DT2[, hour_cer:=date_cer%%100]
-#   DT2[, day_cer:=(date_cer - date_cer%%100)/100]
-  # imput avgs
-  ns  <- DT2[, .(indx=which(is.na(kwh)))]
-  ns1 <- ns[, .(indx=indx+1)]
-  ns_1<- ns[, .(indx=indx-1)]
-  ns <- unique(rbindlist(list(ns, ns1, ns_1)))
-  setkey(ns, indx)
-  ns <- ns$indx
-  DT2[ns]
-  NAs <- DT2[is.na(kwh)]
-  NAs[, c(paste0('day_cer_',c(1:5))):=list(day_cer-1,
-    day_cer-2, day_cer-3, day_cer-4, day_cer-5)]
+  # imput weekdays
+  ## data table to search
+  DT_wkdy <- merge(DT2, weekdays, by = 'date_cer')
+  DT_wkdy[, hour_cer := date_cer %%100]
+  DT_wkdy[, day_cer  := (date_cer - hour_cer)/100]
+  setkey(DT_wkdy, id, date_cer)
+
+  ## create weekday indx
+  ids <- unique(DT_wkdy$id)
+  dates <- unique(DT_wkdy$date_cer)
+  days <- unique((dates - dates%%100)/100)
+  N <- length(ids)
+  T <- length(dates)
+  NT <- matrix(DT_wkdy$kwh,nrow=T,ncol=N) # rows = T, cols = N
+  indx <- which(is.na(NT), arr.ind = TRUE) # find r,c index of missing vals
+  indx <- as.data.table(indx)
+  indx[, id := ids[col]]
+  indx[, date_cer := dates[row]]
+  indx[, hour_cer := date_cer %%100]
+  indx[, day_cer  := (date_cer - hour_cer)/100]
+  setkey(DT_wkdy, id, hour_cer, day_cer)
+  setkey(indx, id, hour_cer, day_cer)
+  imputs <- mapply(function(x, y, z) {
+    j <- which(days %in% z) # match to cer_days vector
+    past_days <- days[(j-1):(j-10)] # sequence back 5 weekdays
+    past_kwh <- vapply(past_days, function(i) DT_wkdy[.(x,y,i)]$kwh, numeric(1))
+    avg10 <- mean(past_kwh, na.rm=TRUE) # avg of past 10 readings at given hour
+    DT_wkdy[.(x,y,z), kwh:=avg10]
+  }, x=indx$id, y=indx$hour_cer, z=indx$day_cer)
+
+
 
 }
 

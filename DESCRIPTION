@@ -20,4 +20,5 @@ Imports:
   SparseM,
   MASS,
   lars,
-  lattice
+  lattice,
+  parallel
