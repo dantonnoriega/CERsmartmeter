@@ -85,6 +85,7 @@ get_cer <- function(cer_dir="~/Dropbox/ISSDA_CER_Smart_Metering_Data/",
     DT = merge(DT, dt_srvy, by = 'id', all.x=TRUE)
   }
 
+  setkey(DT, id, date_cer)
   message("...done.")
   return(DT)
 
