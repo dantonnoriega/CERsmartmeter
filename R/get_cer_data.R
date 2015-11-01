@@ -109,7 +109,7 @@ get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   setnames(srvy, names(srvy), nms)
 
   return(srvy)
-  }
+}
 
 get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
 
@@ -134,8 +134,14 @@ get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
                  min = minute(dublin),
                  tz = tzone)]
 
-  weather <- weather[, list(temp = mean(temp), dewpt = mean(dewpt), rhum = mean(rhum)),
+  weather <- weather[, list(temp = mean(temp, na.rm=TRUE),
+                            dewpt = mean(dewpt, na.rm=TRUE),
+                            rhum = mean(rhum, na.rm=TRUE)),
                      by = c('year', 'month', 'day', 'hour', 'tz')]
+  ## scale weather
+  weather[, temp := (temp - min(temp))/(max(temp)-min(temp))]
+  weather[, dewpt := (dewpt - min(dewpt))/(max(dewpt)-min(dewpt))]
+  weather[, rhum := (rhum - min(rhum))/(max(rhum)-min(rhum))]
   # add squared values
   weather[, `:=`(temp2 = temp^2, dewpt2 = dewpt^2, rhum2 = rhum^2)]
   weather[, `:=`(temp3 = temp^3, dewpt3 = dewpt^3, rhum3 = rhum^3)]
@@ -185,7 +191,7 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   dt_ts <- dt_ts[weeks_T]
   setkey(dt_ts, hour, weekday)
   dt_ts[, peak:=0]
-  dt_ts[.(c(5,6,7), 1), peak:=1]
+  dt_ts[.(c(17,18), 1), peak:=1]
   setkey(dt_ts, date_cer)
   # mark dst days
   dt_ts[, dst:=0]
