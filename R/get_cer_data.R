@@ -189,9 +189,9 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   setkey(dt_ts, date)
   setkey(weeks_T, date)
   dt_ts <- dt_ts[weeks_T]
-  setkey(dt_ts, hour, weekday)
+  setkey(dt_ts, hour_cer, weekday)
   dt_ts[, peak:=0]
-  dt_ts[.(c(17,18), 1), peak:=1]
+  dt_ts[.(c(35:38), 1), peak:=1]
   setkey(dt_ts, date_cer)
   # mark dst days
   dt_ts[, dst:=0]
