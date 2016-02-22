@@ -2,14 +2,16 @@
 % Please edit documentation in R/clean_cer.R
 \name{find_seq_zeros_nas}
 \alias{find_seq_zeros_nas}
-\title{drop ids with sequential zero readings.}
+\title{drop ids with long sequential zero readings or missing values.}
 \usage{
-find_seq_zeros_nas(DT_KWH, tol = 6, drop = TRUE)
+find_seq_zeros_nas(DT_KWH, tol = 10, drop = TRUE)
 }
 \arguments{
-\item{tol}{tolerable sequence of zeros and missing vaues}
+\item{tol}{tolerable sequence of zeros and missing values}
+
+\item{drop}{drops ids with long sequence of zeroes}
 }
 \description{
-drop ids with sequential zero readings.
+drop ids with long sequential zero readings or missing values.
 }
 

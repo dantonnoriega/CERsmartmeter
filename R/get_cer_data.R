@@ -108,6 +108,19 @@ get_survey <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   nms = tolower(nms)
   setnames(srvy, names(srvy), nms)
 
+  # create home age dummies
+  unique(srvy[!is.na(f_approx_home_age), .(f_approx_home_age, f_approx_home_age_lbl)])
+
+  # lets collapse this data into a set of dummy variables:
+  #   - "d_home_age_10orless"
+  #   - "d_home_age_10to30"
+  #   - "d_home_age_30ormore"
+  # REMEMBER: dummy variables must be 0 or 1 --- NA is not equivalent to 0!
+  srvy[, d_home_age_10orless := 0 + !is.na(n_home_age <= 10 | f_approx_home_age < 3)]
+  srvy[, d_home_age_11to30   := 0 + !is.na((n_home_age > 10 & n_home_age < 30) | f_approx_home_age == 3)]
+  srvy[, d_home_age_31ormore := 0 + !is.na(n_home_age >= 30 | f_approx_home_age > 3)]
+
+
   return(srvy)
 }
 
@@ -139,14 +152,21 @@ get_weather <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
                             rhum = mean(rhum, na.rm=TRUE)),
                      by = c('year', 'month', 'day', 'hour', 'tz')]
   ## scale weather
-  weather[, temp := (temp - min(temp))/(max(temp)-min(temp))]
-  weather[, dewpt := (dewpt - min(dewpt))/(max(dewpt)-min(dewpt))]
-  weather[, rhum := (rhum - min(rhum))/(max(rhum)-min(rhum))]
-  # add squared values
-  weather[, `:=`(temp2 = temp^2, dewpt2 = dewpt^2, rhum2 = rhum^2)]
-  weather[, `:=`(temp3 = temp^3, dewpt3 = dewpt^3, rhum3 = rhum^3)]
+  weather[, temp_scaled := (temp - min(temp))/(max(temp)-min(temp))]
+  weather[, dewpt_scaled := (dewpt - min(dewpt))/(max(dewpt)-min(dewpt))]
+  weather[, rhum_scaled := (rhum - min(rhum))/(max(rhum)-min(rhum))]
 
+  ## add date_cer values
+  weather = merge(weather, cer_ts[, .(year, month, day, hour, minute, date_cer, day_cer, hour_cer)],
+               by = c('year', 'month', 'day', 'hour'))
+
+  ## adjust the weather for hour 00:00 to land on 23:59 of prior day
+  indx = 1:dim(weather)[1]
+  h00m30 = weather[indx, .(temp, dewpt, rhum, temp_scaled, dewpt_scaled, rhum_scaled)]
+  weather[indx-1, c("temp", "dewpt", "rhum", "temp_scaled", "dewpt_scaled", "rhum_scaled"):=h00m30]
+  setcolorder(weather, c(1,2,3,4,12:15,5:11))
   return(weather)
+
 }
 
 get_assign <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
@@ -196,6 +216,10 @@ get_ts <- function(cer_dir = "~/Dropbox/ISSDA_CER_Smart_Metering_Data/") {
   # mark dst days
   dt_ts[, dst:=0]
   dt_ts[day_cer %in% c(452, 298, 669), dst:=1]
+  # update hours and minutes to end in 29 and 59
+  dt_ts[minute==30, minute:=minute-1L] # 30 mins to 29
+  dt_ts[minute==0, hour:=hour-1L] # down shift all minute 0s
+  dt_ts[minute==0, minute:=59] # set 0 to 59
   return(dt_ts)
 }
 

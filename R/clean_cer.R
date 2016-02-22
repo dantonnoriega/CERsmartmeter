@@ -1,9 +1,8 @@
-#' Useful functions for cleaning problems with the CER data. Used AFTER one has imported
-#' the raw data using get_cer(). It will first fill in any
+#' creates a balanced panel of CER data.
 #'
 #' @param DT_KWH (data.table) table with CER consumption data
 #' @param drop_dst (logical) drop Daylight savings observations (data will NOT be perfectly balance if FALSE)
-balance_kwh <- function(DT_KWH, drop_dst=FALSE) {
+balance_kwh <- function(DT_KWH, drop_dst=TRUE) {
 
   message('balancing data...')
   # modal value of 30 min interval counts
@@ -37,8 +36,9 @@ balance_kwh <- function(DT_KWH, drop_dst=FALSE) {
 
 }
 
-#' drop ids with sequential zero readings.
-#' @param tol tolerable sequence of zeros and missing vaues
+#' drop ids with long sequential zero readings or missing values.
+#' @param tol tolerable sequence of zeros and missing values
+#' @param drop drops ids with long sequence of zeroes
 find_seq_zeros_nas <- function(DT_KWH, tol = 10, drop = TRUE) {
   message('searching for long strings of zeros or nas...')
   indx <- DT_KWH[is.na(kwh) | kwh==0]
@@ -65,7 +65,7 @@ find_seq_zeros_nas <- function(DT_KWH, tol = 10, drop = TRUE) {
   return(list(DT1, sq))
 }
 
-#' find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).
+#' Find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).
 #' @param kwh_surge set value of what is considered a kwh surge
 smooth_residential_kwh <- function(DT_KWH, kwh_surge = 6) {
 
@@ -89,8 +89,9 @@ smooth_residential_kwh <- function(DT_KWH, kwh_surge = 6) {
 
 }
 
-#' imput residential kwh zeros and missing data along time. imputation can take a LONG time.
-imput_residential_kwh_time <- function(DT_KWH) {
+#' IN TESTING
+#' impute residential kwh zeros and missing data along time. imputation can take a LONG time.
+impute_residential_kwh_time <- function(DT_KWH) {
 
   # check to see if residential only data
   if(!"tar_stim" %in% names(DT_KWH)) {
@@ -164,76 +165,4 @@ imput_residential_kwh_time <- function(DT_KWH) {
   setkey(DT1, id, date_cer)
   return(DT1)
 }
-
-
-#' imput residential kwh data. imputation can take a LONG time.
-imput_residential_kwh_days <- function(DT_KWH) {
-
-  # check to see if residential only data
-  if(!"tar_stim" %in% names(DT_KWH)) {
-    DT1 <- merge(DT_KWH, cer_assign, by = "id")
-  }
-  # balance data
-  DT1 <- balance_kwh(DT1)[, .(id, date_cer, kw, kwh)]
-  setkey(DT1, id, date_cer)
-  weekdays <- cer_ts[weekday > 0, .(date_cer, weekday)]
-  weekends <- cer_ts[weekday < 1, .(date_cer, weekday)]
-
-# IMPUT WEEKDAYS and WEEKENDS ----------------------------------------------------------
-  ## data table to search
-  DT_wkdy <- merge(DT1, weekdays, by = 'date_cer') # weekday data
-  DT_wknd <- merge(DT1, weekends, by = 'date_cer') # weekend data
-  # loop
-  DTS <- lapply(list(DT_wknd, DT_wkdy), function(DT0) {
-    DT0[, hour_cer := date_cer %%100]
-    DT0[, day_cer  := (date_cer - hour_cer)/100]
-    ## create weekday indx
-    setkey(DT0, id, date_cer) # crucial that we sequentially
-    ids <- unique(DT0$id)
-    dates <- unique(DT0$date_cer)
-    days <- unique((dates - dates%%100)/100)
-    N <- length(ids)
-    T <- length(dates)
-    NT <- matrix(DT0$kwh,nrow=T,ncol=N) # rows = T, cols = N
-    indx <- which(NT==0, arr.ind = TRUE) # find r,c index of missing vals
-    indx <- as.data.table(indx)
-    indx[, id := ids[col]]
-    indx[, date_cer := dates[row]] # only works if data is sequential!
-    indx[, hour_cer := date_cer %%100]
-    indx[, day_cer  := (date_cer - hour_cer)/100]
-    # set keys for quick search and column binding
-    setkey(DT0, id, hour_cer, day_cer)
-    setkey(indx, id, hour_cer, day_cer)
-    # parallel search
-    if(require(parallel) & .Platform$OS.type == "unix") {
-      message('parallel package found on Mac/Linux system. using mcmapply.')
-      CORES <- detectCores() - 1
-      imputs <- mcmapply(function(x, y, z) { # use mcmapply
-        j <- which(days %in% z) # match to cer_days vector
-        past_days <- days[(j-1):(j-10)] # sequence back 5 weekdays
-        past_kwh <- vapply(past_days, function(i) DT0[.(x,y,i)]$kwh, numeric(1))
-        avg10 <- mean(past_kwh, na.rm=TRUE) # avg of past 10 readings at given hour
-        return(avg10)
-      }, x=indx$id, y=indx$hour_cer, z=indx$day_cer, mc.cores=CORES)
-    } else {
-      message('parallel NOT package found. NOT using mcmapply.')
-      imputs <- mapply(function(x, y, z) { # use mcmapply
-        r <- which(days %in% z) # match to cer_days vector
-        past_days <- days[(j-1):(j-10)] # sequence back 10 weekdays
-        past_kwh <- vapply(past_days, function(i) DT0[.(x,y,i)]$kwh, numeric(1))
-        avg10 <- mean(past_kwh, na.rm=TRUE) # avg of past 10 readings at given hour
-        return(avg10)
-      }, x=indx$id, y=indx$hour_cer, z=indx$day_cer)
-    }
-    DT0[is.na(kwh), kwh:=imputs]
-    DT0[is.na(kw), kw:=kwh*2]
-    return(DT0)
-  })
-
-# END IMPUT ------------------------------------------------------------
-  DT1 <- rbindlist(DTS)
-  setkey(DT1, id, date_cer)
-  return(DT1)
-}
-
 

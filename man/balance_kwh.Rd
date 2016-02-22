@@ -2,10 +2,9 @@
 % Please edit documentation in R/clean_cer.R
 \name{balance_kwh}
 \alias{balance_kwh}
-\title{Useful functions for cleaning problems with the CER data. Used AFTER one has imported
-the raw data using get_cer(). It will first fill in any}
+\title{creates a balanced panel of CER data.}
 \usage{
-balance_kwh(DT_KWH, drop_dst = FALSE)
+balance_kwh(DT_KWH, drop_dst = TRUE)
 }
 \arguments{
 \item{DT_KWH}{(data.table) table with CER consumption data}
@@ -13,7 +12,6 @@ balance_kwh(DT_KWH, drop_dst = FALSE)
 \item{drop_dst}{(logical) drop Daylight savings observations (data will NOT be perfectly balance if FALSE)}
 }
 \description{
-Useful functions for cleaning problems with the CER data. Used AFTER one has imported
-the raw data using get_cer(). It will first fill in any
+creates a balanced panel of CER data.
 }
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/clean_cer.R
 \name{smooth_residential_kwh}
 \alias{smooth_residential_kwh}
-\title{find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).}
+\title{Find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).}
 \usage{
 smooth_residential_kwh(DT_KWH, kwh_surge = 6)
 }
@@ -10,6 +10,6 @@ smooth_residential_kwh(DT_KWH, kwh_surge = 6)
 \item{kwh_surge}{set value of what is considered a kwh surge}
 }
 \description{
-find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).
+Find surges in kwh and smooth them out. Pon (2015) finds that average KWH consumption per household is about 11-12 kwh. It is assumed that a surge, therefore, would be anything about 6 kwh per half hour (12 kwh).
 }
 
